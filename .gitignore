@@ -6,3 +6,5 @@ backend/__pycache__/
 .DS_Store
 chat_logs.txt
 backend/chat_logs.txt
+conversations.json
+backend/conversations.json
