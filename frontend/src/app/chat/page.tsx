@@ -1,31 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
-type Message = {
-  role: string;
-  content: string;
-};
+import { useState, useEffect, useRef } from "react";
+import { sendMessage, getHistory } from "@/services/api";
 
 export default function ChatPage() {
-  const router = useRouter();
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  // 🔥 Auto scroll to bottom
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // 🔥 Load chat history
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
     const token = localStorage.getItem("token");
+    const username = localStorage.getItem("username");
 
-    if (!token) {
-      router.push("/login");
-    }
-  }, [router]);
+    if (!token || !username) return;
 
-  const sendMessage = async () => {
+    const data = await getHistory(username, token);
+
+    const formatted = data.map((msg: any) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    setMessages(formatted);
+  };
+
+  // 🔥 Send message
+  const send = async () => {
+    if (!input.trim()) return;
+
     const token = localStorage.getItem("token");
-
-    if (!token || !input.trim()) return;
+    if (!token) return;
 
     const userMessage = {
       role: "user",
@@ -34,105 +54,81 @@ export default function ChatPage() {
 
     setMessages((prev) => [...prev, userMessage]);
 
-    const currentInput = input;
+    const messageToSend = input;
     setInput("");
 
+    setLoading(true);
+
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: currentInput,
-          }),
-        }
-      );
+      const res = await sendMessage(messageToSend, token);
 
-      const data = await response.json();
+      const aiMessage = {
+        role: "assistant",
+        content: res.reply,
+      };
 
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.reply,
-        },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Error contacting server.",
+          content: "Error: AI not responding",
         },
       ]);
     }
-  };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    router.push("/login");
+    setLoading(false);
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-900">
-      <div className="w-full max-w-4xl h-[85vh] bg-slate-800 rounded-2xl shadow-2xl flex flex-col">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-900">
 
-        <div className="flex justify-between items-center border-b border-slate-700 p-4">
-          <h1 className="text-2xl font-bold text-white">
-            🤖 AI Assistant
-          </h1>
+      <div className="w-full max-w-2xl h-[80vh] bg-slate-800 rounded-2xl flex flex-col">
 
-          <button
-            onClick={logout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-          >
-            Logout
-          </button>
+        {/* Header */}
+        <div className="p-4 border-b border-slate-700 text-white font-bold">
+          AI Chat Assistant
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.map((msg, index) => (
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {messages.map((msg, i) => (
             <div
-              key={index}
-              className={`flex ${
+              key={i}
+              className={`p-3 rounded-lg max-w-xs text-white ${
                 msg.role === "user"
-                  ? "justify-end"
-                  : "justify-start"
+                  ? "bg-blue-600 ml-auto"
+                  : "bg-slate-700"
               }`}
             >
-              <div
-                className={`px-4 py-2 rounded-2xl max-w-md text-white ${
-                  msg.role === "user"
-                    ? "bg-blue-600"
-                    : "bg-slate-700"
-                }`}
-              >
-                {msg.content}
-              </div>
+              {msg.content}
             </div>
           ))}
+
+          {/* 🔥 Typing indicator */}
+          {loading && (
+            <div className="bg-slate-700 text-white p-3 rounded-lg w-fit">
+              AI is thinking...
+            </div>
+          )}
+
+          <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-slate-700 p-4 flex gap-2">
+        {/* Input */}
+        <div className="p-4 border-t border-slate-700 flex gap-2">
           <input
+            className="flex-1 p-2 rounded bg-slate-700 text-white"
             value={input}
-            onChange={(e) =>
-              setInput(e.target.value)
-            }
-            onKeyDown={(e) =>
-              e.key === "Enter" && sendMessage()
-            }
-            placeholder="Type your message..."
-            className="flex-1 rounded-xl bg-slate-700 text-white px-4 py-3 outline-none"
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type message..."
+            onKeyDown={(e) => e.key === "Enter" && send()}
           />
 
           <button
-            onClick={sendMessage}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+            onClick={send}
+            className="bg-blue-600 px-4 py-2 rounded text-white"
           >
             Send
           </button>
