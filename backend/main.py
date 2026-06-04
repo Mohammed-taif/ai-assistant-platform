@@ -10,7 +10,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from database import Base, engine, SessionLocal
-from models import ChatMessage, User
+from models import User, ChatMessage, Conversation
 
 import os
 
@@ -36,7 +36,7 @@ client = Groq(
 )
 
 # ------------------------
-# APP
+# APP SETUP
 # ------------------------
 app = FastAPI()
 
@@ -69,7 +69,7 @@ class ChatRequest(BaseModel):
     message: str
 
 # ------------------------
-# JWT
+# JWT HELPERS
 # ------------------------
 def create_token(data: dict):
     to_encode = data.copy()
@@ -94,9 +94,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     return username
 
 # ------------------------
-# ROUTES
+# ROOT
 # ------------------------
-
 @app.get("/")
 def root():
     return {"message": "AI Assistant Backend Running"}
@@ -105,21 +104,19 @@ def root():
 # REGISTER
 # ------------------------
 @app.post("/register")
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
+def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
-    existing_user = db.query(User).filter(User.username == request.username).first()
+    user = db.query(User).filter(User.username == req.username).first()
 
-    if existing_user:
+    if user:
         return {"error": "Username already exists"}
 
-    hashed_password = pwd_context.hash(request.password)
-
-    user = User(
-        username=request.username,
-        password=hashed_password
+    new_user = User(
+        username=req.username,
+        password=pwd_context.hash(req.password)
     )
 
-    db.add(user)
+    db.add(new_user)
     db.commit()
 
     return {"message": "User registered successfully"}
@@ -146,21 +143,95 @@ def login(username: str, password: str, db: Session = Depends(get_db)):
     }
 
 # ------------------------
-# CHAT
+# CREATE CONVERSATION
 # ------------------------
-@app.post("/chat")
-def chat(
-    request: ChatRequest,
+@app.post("/conversation/new")
+def create_conversation(
     user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
 
-    # get chat history from DB
-    history = (
-        db.query(ChatMessage)
-        .filter(ChatMessage.user_id == user)
-        .all()
+    conv = Conversation(
+        user_id=user,
+        title="New Chat"
     )
+
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+
+    return {
+        "conversation_id": conv.id,
+        "title": conv.title
+    }
+
+# ------------------------
+# GET CONVERSATIONS (SIDEBAR)
+# ------------------------
+@app.get("/conversations")
+def get_conversations(
+    user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    convs = db.query(Conversation).filter(Conversation.user_id == user).all()
+
+    return [
+        {
+            "id": c.id,
+            "title": c.title
+        }
+        for c in convs
+    ]
+
+# ------------------------
+# GET MESSAGES OF ONE CHAT
+# ------------------------
+@app.get("/conversation/{conversation_id}")
+def get_messages(conversation_id: int, db: Session = Depends(get_db)):
+
+    messages = db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation_id
+    ).all()
+
+    return [
+        {
+            "role": m.role,
+            "content": m.content
+        }
+        for m in messages
+    ]
+
+# ------------------------
+# CHAT (MULTI-CONVERSATION)
+# ------------------------
+@app.post("/chat")
+def chat(
+    req: ChatRequest,
+    conversation_id: int | None = None,
+    user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    # ------------------------
+    # STEP 1: CREATE CONVERSATION IF NOT PROVIDED
+    # ------------------------
+    if not conversation_id:
+        new_conv = Conversation(
+            user_id=user,
+            title=req.message[:30]  # auto title from first message
+        )
+        db.add(new_conv)
+        db.commit()
+        db.refresh(new_conv)
+        conversation_id = new_conv.id
+
+    # ------------------------
+    # STEP 2: GET HISTORY
+    # ------------------------
+    history = db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation_id
+    ).all()
 
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant."}
@@ -172,18 +243,22 @@ def chat(
             "content": msg.content
         })
 
-    # add new user message
-    messages.append({"role": "user", "content": request.message})
+    messages.append({"role": "user", "content": req.message})
 
-    # save user message
+    # ------------------------
+    # STEP 3: SAVE USER MESSAGE
+    # ------------------------
     db.add(ChatMessage(
         user_id=user,
+        conversation_id=conversation_id,
         role="user",
-        content=request.message
+        content=req.message
     ))
     db.commit()
 
-    # AI response
+    # ------------------------
+    # STEP 4: AI RESPONSE
+    # ------------------------
     completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=messages
@@ -191,39 +266,32 @@ def chat(
 
     reply = completion.choices[0].message.content
 
-    # save assistant message
+    # ------------------------
+    # STEP 5: SAVE AI MESSAGE
+    # ------------------------
     db.add(ChatMessage(
         user_id=user,
+        conversation_id=conversation_id,
         role="assistant",
         content=reply
     ))
     db.commit()
 
-    return {"reply": reply}
-
-# ------------------------
-# HISTORY
-# ------------------------
-@app.get("/history/{user_id}")
-def get_history(user_id: str, db: Session = Depends(get_db)):
-
-    messages = db.query(ChatMessage).filter(ChatMessage.user_id == user_id).all()
-
-    return [
-        {
-            "role": msg.role,
-            "content": msg.content
-        }
-        for msg in messages
-    ]
+    return {
+        "reply": reply,
+        "conversation_id": conversation_id
+    }
 
 # ------------------------
 # CLEAR CHAT
 # ------------------------
-@app.delete("/clear-chat/{user_id}")
-def clear_chat(user_id: str, db: Session = Depends(get_db)):
+@app.delete("/clear-chat/{conversation_id}")
+def clear_chat(conversation_id: int, db: Session = Depends(get_db)):
 
-    db.query(ChatMessage).filter(ChatMessage.user_id == user_id).delete()
+    db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation_id
+    ).delete()
+
     db.commit()
 
-    return {"message": f"Chat cleared for {user_id}"}
+    return {"message": "Chat cleared"}
