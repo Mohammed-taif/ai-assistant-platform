@@ -243,34 +243,34 @@ export default function ChatPage() {
         {/* CHAT LIST */}
         <div className="flex-1 overflow-y-auto">
 
-          {conversations.map((chat: any) => (
+          {conversations.map((chat: any, index: number) => (
 
-            <div
-              key={chat.id}
-              className="flex items-center border-b border-slate-800"
-            >
+  <div
+    key={chat.id}
+    className="flex items-center border-b border-slate-800"
+  >
 
-              <button
-                onClick={() =>
-                  loadConversation(chat.id)
-                }
-                className="flex-1 text-left p-4 text-white hover:bg-slate-800"
-              >
-                Chat #{chat.id - 1}
-              </button>
+    <button
+      onClick={() =>
+        loadConversation(chat.id)
+      }
+      className="flex-1 text-left p-4 text-white hover:bg-slate-800"
+    >
+      Chat #{index + 1}
+    </button>
 
-              <button
-                onClick={() =>
-                  handleDeleteConversation(chat.id)
-                }
-                className="text-red-400 px-3"
-              >
-                ✕
-              </button>
+    <button
+      onClick={() =>
+        handleDeleteConversation(chat.id)
+      }
+      className="text-red-400 px-3"
+    >
+      ✕
+    </button>
 
-            </div>
+  </div>
 
-          ))}
+))}
 
         </div>
       </div>
