@@ -10,8 +10,7 @@ from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from database import Base, engine, SessionLocal
-from models import User, ChatMessage, Conversation
-
+from models import ChatMessage, User, Conversation
 import os
 
 # ------------------------
@@ -295,3 +294,25 @@ def clear_chat(conversation_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Chat cleared"}
+# DELETE CONVERSATION
+@app.delete("/conversation/{conversation_id}")
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db)
+):
+
+    # Delete messages
+    db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation_id
+    ).delete()
+
+    # Delete conversation
+    db.query(Conversation).filter(
+        Conversation.id == conversation_id
+    ).delete()
+
+    db.commit()
+
+    return {
+        "message": "Conversation deleted"
+    }
