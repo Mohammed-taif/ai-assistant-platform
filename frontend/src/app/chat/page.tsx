@@ -18,6 +18,17 @@ import {
 export default function ChatPage() {
 
   const router = useRouter();
+  useEffect(() => {
+
+  const token =
+    localStorage.getItem("token");
+
+  if (!token) {
+
+    router.push("/login");
+  }
+
+}, []);
 
   const [messages, setMessages] =
     useState<any[]>([]);
