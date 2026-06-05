@@ -24,3 +24,36 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* MESSAGE FADE ANIMATION */
+@keyframes messageFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-fade {
+  animation: messageFade 0.25s ease-out;
+}
+
+/* SIDEBAR ANIMATION */
+@keyframes slideInSidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-chat {
+  animation: slideInSidebar 0.25s ease-out;
+}

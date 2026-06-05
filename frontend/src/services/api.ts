@@ -33,8 +33,12 @@ export async function sendMessage(
   conversationId?: number
 ) {
 
+  const url = conversationId
+    ? `${API_URL}/chat?conversation_id=${conversationId}`
+    : `${API_URL}/chat`;
+
   const response = await fetch(
-    `${API_URL}/chat`,
+    url,
     {
       method: "POST",
 
@@ -45,7 +49,6 @@ export async function sendMessage(
 
       body: JSON.stringify({
         message,
-        conversation_id: conversationId,
       }),
     }
   );

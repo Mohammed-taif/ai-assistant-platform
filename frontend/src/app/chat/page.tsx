@@ -153,70 +153,111 @@ export default function ChatPage() {
     router.push("/login");
   };
 
+  
   // SEND MESSAGE
-  const send = async () => {
+const send = async () => {
 
-    if (!input.trim()) return;
+  if (!input.trim()) return;
 
-    const token =
-      localStorage.getItem("token");
+  const token =
+    localStorage.getItem("token");
 
-    if (!token) return;
+  if (!token) return;
 
-    const userMessage = {
-      role: "user",
-      content: input,
-    };
+  const userMessage = {
+    role: "user",
+    content: input,
+  };
+
+  setMessages((prev) => [
+    ...prev,
+    userMessage,
+  ]);
+
+  const messageToSend = input;
+
+  setInput("");
+
+  setLoading(true);
+
+  try {
+
+    const response =
+      await sendMessage(
+        messageToSend,
+        token,
+        conversationId || undefined
+      );
+
+    // Hide "AI is thinking..."
+    setLoading(false);
+
+    // Add empty assistant message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: "",
+      },
+    ]);
+
+    const reply =
+      response.reply || "";
+
+    let currentText = "";
+
+    for (
+      let i = 0;
+      i < reply.length;
+      i++
+    ) {
+
+      currentText += reply[i];
+
+      await new Promise(
+        (resolve) =>
+          setTimeout(resolve, 15)
+      );
+
+      setMessages((prev) => {
+
+        const updated = [...prev];
+
+        updated[
+          updated.length - 1
+        ] = {
+          role: "assistant",
+          content: currentText,
+        };
+
+        return updated;
+      });
+    }
+
+    // Store conversation ID
+    if (!conversationId) {
+
+      setConversationId(
+        response.conversation_id
+      );
+
+      loadConversations();
+    }
+
+  } catch (error) {
+
+    setLoading(false);
 
     setMessages((prev) => [
       ...prev,
-      userMessage,
+      {
+        role: "assistant",
+        content:
+          "Error: AI not responding",
+      },
     ]);
-
-    const messageToSend = input;
-
-    setInput("");
-
-    setLoading(true);
-
-    try {
-
-      const response =
-        await sendMessage(
-          messageToSend,
-          token,
-          conversationId || undefined
-        );
-
-      setMessages((prev) => [
-        ...prev,
-        aiMessage,
-      ]);
-
-      // STORE NEW CONVERSATION
-      if (!conversationId) {
-
-        setConversationId(
-          response.conversation_id
-        );
-
-        loadConversations();
-      }
-
-    } catch (error) {
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Error: AI not responding",
-        },
-      ]);
-    }
-
-    setLoading(false);
-  };
+  }
+};
 
   return (
     <main className="flex h-screen bg-slate-900">
@@ -242,7 +283,7 @@ export default function ChatPage() {
 
   <div
     key={chat.id}
-    className="flex items-center border-b border-slate-800"
+    className="sidebar-chat flex items-center border-b border-slate-800"
   >
 
     <button
@@ -296,7 +337,7 @@ export default function ChatPage() {
 
             <div
               key={i}
-              className={`p-3 rounded-xl max-w-[80%] text-white ${
+              className={`message-fade p-3 rounded-xl max-w-[80%] text-white ${
                 msg.role === "user"
                   ? "bg-blue-600 ml-auto"
                   : "bg-slate-700"
