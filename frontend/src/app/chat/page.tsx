@@ -188,11 +188,6 @@ export default function ChatPage() {
           conversationId || undefined
         );
 
-      const aiMessage = {
-        role: "assistant",
-        content: response.reply,
-      };
-
       setMessages((prev) => [
         ...prev,
         aiMessage,
