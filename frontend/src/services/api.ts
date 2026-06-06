@@ -1,7 +1,6 @@
 const API_URL = "http://127.0.0.1:8000";
 
 // LOGIN
-// LOGIN
 export async function login(
   username: string,
   password: string
@@ -33,12 +32,8 @@ export async function sendMessage(
   conversationId?: number
 ) {
 
-  const url = conversationId
-    ? `${API_URL}/chat?conversation_id=${conversationId}`
-    : `${API_URL}/chat`;
-
   const response = await fetch(
-    url,
+    `${API_URL}/chat`,
     {
       method: "POST",
 
@@ -49,6 +44,7 @@ export async function sendMessage(
 
       body: JSON.stringify({
         message,
+        conversation_id: conversationId,
       }),
     }
   );
