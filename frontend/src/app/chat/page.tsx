@@ -18,17 +18,6 @@ import {
 export default function ChatPage() {
 
   const router = useRouter();
-  useEffect(() => {
-
-  const token =
-    localStorage.getItem("token");
-
-  if (!token) {
-
-    router.push("/login");
-  }
-
-}, []);
 
   const [messages, setMessages] =
     useState<any[]>([]);
@@ -57,11 +46,23 @@ export default function ChatPage() {
 
   }, [messages]);
 
-  // LOAD CONVERSATIONS
+  // AUTH CHECK + LOAD CONVERSATIONS
   useEffect(() => {
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+
+      router.push("/login");
+      return;
+    }
+
     loadConversations();
+
   }, []);
 
+  // LOAD CONVERSATIONS
   const loadConversations = async () => {
 
     const token =
@@ -74,7 +75,11 @@ export default function ChatPage() {
       const data =
         await getConversations(token);
 
-      setConversations(data);
+      setConversations(
+        Array.isArray(data)
+          ? data
+          : []
+      );
 
     } catch (error) {
 
@@ -92,7 +97,11 @@ export default function ChatPage() {
     const token =
       localStorage.getItem("token");
 
-    if (!token) return;
+    if (!token) {
+
+      router.push("/login");
+      return;
+    }
 
     try {
 
@@ -130,7 +139,11 @@ export default function ChatPage() {
       const token =
         localStorage.getItem("token");
 
-      if (!token) return;
+      if (!token) {
+
+        router.push("/login");
+        return;
+      }
 
       try {
 
@@ -164,111 +177,104 @@ export default function ChatPage() {
     router.push("/login");
   };
 
-  
   // SEND MESSAGE
-const send = async () => {
+  const send = async () => {
 
-  if (!input.trim()) return;
+    if (!input.trim()) return;
 
-  const token =
-    localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
-  if (!token) return;
+    if (!token) {
 
-  const userMessage = {
-    role: "user",
-    content: input,
-  };
+      router.push("/login");
+      return;
+    }
 
-  setMessages((prev) => [
-    ...prev,
-    userMessage,
-  ]);
+    const userMessage = {
+      role: "user",
+      content: input,
+    };
 
-  const messageToSend = input;
-
-  setInput("");
-
-  setLoading(true);
-
-  try {
-
-    const response =
-      await sendMessage(
-        messageToSend,
-        token,
-        conversationId || undefined
-      );
-
-    // Hide "AI is thinking..."
-    setLoading(false);
-
-    // Add empty assistant message
     setMessages((prev) => [
       ...prev,
-      {
-        role: "assistant",
-        content: "",
-      },
+      userMessage,
     ]);
 
-    const reply =
-      response.reply || "";
+    const messageToSend = input;
 
-    let currentText = "";
+    setInput("");
 
-    for (
-      let i = 0;
-      i < reply.length;
-      i++
-    ) {
+    setLoading(true);
 
-      currentText += reply[i];
+    try {
 
-      await new Promise(
-        (resolve) =>
-          setTimeout(resolve, 15)
-      );
+      const response =
+        await sendMessage(
+          messageToSend,
+          token,
+          conversationId || undefined
+        );
 
-      setMessages((prev) => {
-
-        const updated = [...prev];
-
-        updated[
-          updated.length - 1
-        ] = {
+      // ADD EMPTY AI MESSAGE
+      setMessages((prev) => [
+        ...prev,
+        {
           role: "assistant",
-          content: currentText,
-        };
+          content: "",
+        },
+      ]);
 
-        return updated;
-      });
+      const reply = response.reply;
+
+      let currentText = "";
+
+      // TYPEWRITER EFFECT
+      for (let i = 0; i < reply.length; i++) {
+
+        currentText += reply[i];
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 15)
+        );
+
+        setMessages((prev) => {
+
+          const updated = [...prev];
+
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: currentText,
+          };
+
+          return updated;
+        });
+      }
+
+      // STORE NEW CONVERSATION
+      if (!conversationId) {
+
+        setConversationId(
+          response.conversation_id
+        );
+
+        loadConversations();
+      }
+
+    } catch (error) {
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Error: AI not responding",
+        },
+      ]);
     }
-
-    // Store conversation ID
-    if (!conversationId) {
-
-      setConversationId(
-        response.conversation_id
-      );
-
-      loadConversations();
-    }
-
-  } catch (error) {
 
     setLoading(false);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Error: AI not responding",
-      },
-    ]);
-  }
-};
+  };
 
   return (
     <main className="flex h-screen bg-slate-900">
@@ -292,32 +298,32 @@ const send = async () => {
 
           {conversations.map((chat: any, index: number) => (
 
-  <div
-    key={chat.id}
-    className="sidebar-chat flex items-center border-b border-slate-800"
-  >
+            <div
+              key={chat.id}
+              className="sidebar-chat flex items-center border-b border-slate-800"
+            >
 
-    <button
-      onClick={() =>
-        loadConversation(chat.id)
-      }
-      className="flex-1 text-left p-4 text-white hover:bg-slate-800"
-    >
-      Chat #{index + 1}
-    </button>
+              <button
+                onClick={() =>
+                  loadConversation(chat.id)
+                }
+                className="flex-1 text-left p-4 text-white hover:bg-slate-800"
+              >
+                Chat #{index + 1}
+              </button>
 
-    <button
-      onClick={() =>
-        handleDeleteConversation(chat.id)
-      }
-      className="text-red-400 px-3"
-    >
-      ✕
-    </button>
+              <button
+                onClick={() =>
+                  handleDeleteConversation(chat.id)
+                }
+                className="text-red-400 px-3"
+              >
+                ✕
+              </button>
 
-  </div>
+            </div>
 
-))}
+          ))}
 
         </div>
       </div>
