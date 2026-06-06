@@ -6,6 +6,8 @@ import {
   useRef,
 } from "react";
 
+import ReactMarkdown from "react-markdown";
+
 import { useRouter } from "next/navigation";
 
 import {
@@ -229,6 +231,9 @@ export default function ChatPage() {
 
       let currentText = "";
 
+      // HIDE THINKING MESSAGE
+      setLoading(false);
+
       // TYPEWRITER EFFECT
       for (let i = 0; i < reply.length; i++) {
 
@@ -263,6 +268,8 @@ export default function ChatPage() {
 
     } catch (error) {
 
+      setLoading(false);
+
       setMessages((prev) => [
         ...prev,
         {
@@ -272,8 +279,6 @@ export default function ChatPage() {
         },
       ]);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -360,9 +365,15 @@ export default function ChatPage() {
                   : "bg-slate-700"
               }`}
             >
-              <p className="whitespace-pre-wrap">
-                {msg.content}
-              </p>
+
+              <div className="prose prose-invert max-w-none">
+
+                <ReactMarkdown>
+                  {msg.content}
+                </ReactMarkdown>
+
+              </div>
+
             </div>
 
           ))}
