@@ -282,13 +282,13 @@ export default function ChatPage() {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`message-fade p-3 rounded-xl max-w-[80%] ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white ml-auto"
-                  : isDark
-                  ? "bg-slate-700 text-white"
-                  : "bg-white text-gray-900 border border-gray-200"
-              }`}
+              className={`message-fade p-3 rounded-xl max-w-[80%] w-fit ${
+              msg.role === "user"
+              ? "bg-blue-600 text-white ml-auto"
+              : isDark
+              ? "bg-slate-700 text-white"
+              : "bg-white text-gray-900 border border-gray-200"
+            }`}
             >
               <div className={`prose max-w-none ${isDark ? "prose-invert" : ""}`}>
                 <ReactMarkdown
