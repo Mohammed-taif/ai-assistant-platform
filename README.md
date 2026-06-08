@@ -10,6 +10,14 @@ A full-stack AI chat assistant built with:
 
 ---
 
+# AI Assistant Platform
+
+> A full-stack AI chat application with JWT authentication, 
+> multi-conversation management, and real-time AI responses 
+> powered by Groq's Llama 3.3 70B model.
+
+---
+
 # Features
 
 - User Authentication (Register/Login)
