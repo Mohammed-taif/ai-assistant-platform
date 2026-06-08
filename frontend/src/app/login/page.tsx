@@ -2,42 +2,45 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/services/api";
 
 export default function LoginPage() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleLogin = async () => {
     try {
-      const data = await login(username, password);
+      const response = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
 
       if (data.access_token) {
-        localStorage.setItem(
-          "token",
-          data.access_token
-        );
+        // ✅ Save token and username to localStorage
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("username", username);
 
-        localStorage.setItem(
-          "username",
-          username
-        );
-
-        router.push("/chat");
+        router.push("/chat"); // redirect to chat page
       } else {
-        setError("Invalid credentials");
+        // Show error from backend (e.g. "Invalid username" or "Invalid password")
+        setMessage(data.error || "Login failed");
       }
-    } catch (err) {
-      setError("Login failed");
+    } catch (error) {
+      setMessage("Server error");
     }
   };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-900">
       <div className="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md">
+
         <h1 className="text-3xl font-bold text-white mb-6 text-center">
           Login
         </h1>
@@ -46,9 +49,7 @@ export default function LoginPage() {
           type="text"
           placeholder="Username"
           value={username}
-          onChange={(e) =>
-            setUsername(e.target.value)
-          }
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full p-3 mb-4 rounded-lg bg-slate-700 text-white"
         />
 
@@ -56,16 +57,13 @@ export default function LoginPage() {
           type="password"
           placeholder="Password"
           value={password}
-          onChange={(e) =>
-            setPassword(e.target.value)
-          }
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           className="w-full p-3 mb-4 rounded-lg bg-slate-700 text-white"
         />
 
-        {error && (
-          <p className="text-red-400 mb-4">
-            {error}
-          </p>
+        {message && (
+          <p className="text-center mb-4 text-red-400">{message}</p>
         )}
 
         <button
@@ -74,6 +72,14 @@ export default function LoginPage() {
         >
           Login
         </button>
+
+        <button
+          onClick={() => router.push("/register")}
+          className="w-full mt-3 bg-slate-600 hover:bg-slate-700 text-white py-3 rounded-lg"
+        >
+          Register
+        </button>
+
       </div>
     </main>
   );

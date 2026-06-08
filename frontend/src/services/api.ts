@@ -125,3 +125,25 @@ export async function deleteConversation(
 
   return response.json();
 }
+// SAVE PARTIAL (STOPPED) MESSAGE
+export async function savePartial(
+  conversationId: number,
+  content: string,
+  token: string
+) {
+  const response = await fetch(
+    `${API_URL}/save-partial`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        content,
+      }),
+    }
+  );
+  return response.json();
+}

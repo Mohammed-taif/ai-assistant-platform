@@ -79,6 +79,14 @@ class LoginRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    conversation_id: int | None = None
+
+# ------------------------
+# SAVE PARTIAL MESSAGE
+# ------------------------
+class SavePartialRequest(BaseModel):
+    conversation_id: int
+    content: str
 
 # ------------------------
 # JWT HELPERS
@@ -286,30 +294,26 @@ def get_messages(
 @app.post("/chat")
 def chat(
     req: ChatRequest,
-    conversation_id: int | None = None,
+    # ✅ REMOVE conversation_id from here — now it comes from req.conversation_id
     user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
     request_id = str(uuid4())
-
     active_generations[request_id] = True
 
-    # CREATE CONVERSATION
-    if not conversation_id:
+    # ✅ Read from req.conversation_id instead
+    conversation_id = req.conversation_id
 
+    if not conversation_id:
         new_conv = Conversation(
             user_id=user,
             title=req.message[:30]
         )
-
         db.add(new_conv)
-
         db.commit()
-
         db.refresh(new_conv)
-
         conversation_id = new_conv.id
+
 
     # GET HISTORY
     history = db.query(ChatMessage).filter(
@@ -445,3 +449,21 @@ def delete_conversation(
     return {
         "message": "Conversation deleted"
     }
+
+@app.post("/save-partial")
+def save_partial(
+    req: SavePartialRequest,
+    user: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Delete the full AI reply that was already saved
+    last_msg = db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == req.conversation_id,
+        ChatMessage.role == "assistant"
+    ).order_by(ChatMessage.id.desc()).first()
+
+    if last_msg:
+        last_msg.content = req.content + " [stopped]"
+        db.commit()
+
+    return {"message": "Partial saved"}
