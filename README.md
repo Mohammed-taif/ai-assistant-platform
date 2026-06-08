@@ -234,8 +234,21 @@ POST /chat
 
 # Contributors
 
-- Mohammed Taif
-- Fazil Khan
+## Mohammed Taif — Backend Developer
+- FastAPI server & REST API design
+- JWT Authentication (Register/Login)
+- Database models & SQLAlchemy ORM
+- Groq AI integration (Llama 3.3 70B)
+- Conversation & message management
+- Stop generation & partial save logic
+
+## Fazil Khan — Frontend Developer
+- Next.js app structure & routing
+- Tailwind CSS UI design
+- JWT auth flow (login/register pages)
+- Chat interface & sidebar
+- Markdown & syntax highlighting rendering
+- Smooth AI typing animation & stop button
 
 ---
 
