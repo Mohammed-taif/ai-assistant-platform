@@ -50,3 +50,5 @@ coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+
+frontend/.env.local

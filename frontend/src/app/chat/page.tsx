@@ -46,14 +46,39 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    router.push("/login");
+    return;
+  }
+
+  // ✅ Verify token is still valid with backend
+  const verifyToken = async () => {
+    try {
+      const response = await fetch("http://172.24.0.80:8000/conversations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        // Token invalid or expired — go to login
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        router.push("/login");
+        return;
+      }
+
+      setUsername(localStorage.getItem("username") || "User");
+      loadConversations();
+
+    } catch {
       router.push("/login");
-      return;
     }
-    setUsername(localStorage.getItem("username") || "User");
-    loadConversations();
-  }, []);
+  };
+
+  verifyToken();
+}, []);
 
   const loadConversations = async () => {
     const token = localStorage.getItem("token");
