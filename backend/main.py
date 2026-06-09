@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from uuid import uuid4
+from fastapi import File, UploadFile
 
 from database import Base, engine, SessionLocal
 from models import ChatMessage, User, Conversation
@@ -55,7 +56,8 @@ app.add_middleware(
 # ------------------------
 # AUTH CONFIG
 # ------------------------
-SECRET_KEY = "mysecretkey123"
+import secrets
+SECRET_KEY = secrets.token_hex(32)
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -479,3 +481,21 @@ def save_partial(
         db.commit()
 
     return {"message": "Partial saved"}
+# ------------------------
+# VOICE TRANSCRIPTION
+# ------------------------
+@app.post("/transcribe")
+async def transcribe(
+    file: UploadFile = File(...),
+    user: str = Depends(get_current_user)
+):
+    audio_bytes = await file.read()
+
+    transcription = client.audio.transcriptions.create(
+        file=(file.filename, audio_bytes, file.content_type),
+        model="whisper-large-v3-turbo",
+        language="en",
+        response_format="json"
+    )
+
+    return {"text": transcription.text}
