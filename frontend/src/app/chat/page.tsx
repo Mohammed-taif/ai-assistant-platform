@@ -375,7 +375,7 @@ const stopRecording = () => {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`message-fade p-3 rounded-xl max-w-[80%] ${
+              className={`message-fade p-3 rounded-xl max-w-[80%] w-fit ${
                 msg.role === "user"
                   ? "bg-blue-600 text-white ml-auto"
                   : isDark

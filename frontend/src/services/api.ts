@@ -1,4 +1,4 @@
-const API_URL = "http://172.24.0.80:8000";
+const API_URL = "http://172.24.0.78:8000";
 
 // ✅ Helper to handle responses and catch 401
 async function handleResponse(response: Response) {
