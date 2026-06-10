@@ -28,6 +28,7 @@ export default function ChatPage() {
   const currentTextRef = useRef("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const transcriptRef = useRef("");
 
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
@@ -116,24 +117,36 @@ export default function ChatPage() {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.continuous = false;
+      transcriptRef.current = "";
       recognition.start();
       setIsListening(true);
       (window as any)._recognition = recognition;
 
       recognition.onresult = (event: any) => {
+
         let transcript = "";
+
         for (let i = 0; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
-        }
-        setInput((prev) => prev + transcript);
-        setIsListening(false);
-      };
+       }
+
+       transcriptRef.current = transcript;
+
+       setInput(transcript);
+     };
 
       recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
+      recognition.onend = () => {
+
+        if (transcriptRef.current) {
+          setInput(transcriptRef.current);
+        }
+
+        setIsListening(false);
+      };
 
     } else {
       try {
