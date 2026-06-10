@@ -39,6 +39,7 @@ export default function ChatPage() {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [username, setUsername] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export default function ChatPage() {
       recognition.lang = "en-US";
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.start();
       setIsListening(true);
       (window as any)._recognition = recognition;
@@ -281,7 +282,7 @@ export default function ChatPage() {
     <main className={`flex h-screen ${isDark ? "bg-slate-900" : "bg-gray-100"}`}>
 
       {/* SIDEBAR */}
-      <div className={`w-72 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"} border-r flex flex-col`}>
+      <div className={`${sidebarOpen ? "w-72" : "w-0 overflow-hidden"} transition-all duration-300 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"} border-r flex flex-col`}>
         <div className={`p-4 border-b ${isDark ? "border-slate-800" : "border-gray-200"}`}>
           <button
             onClick={handleNewChat}
@@ -312,6 +313,19 @@ export default function ChatPage() {
             </div>
           ))}
         </div>
+
+        {/* LOGOUT AT BOTTOM OF SIDEBAR */}
+        <div className={`p-4 border-t ${isDark ? "border-slate-800" : "border-gray-200"} flex items-center justify-between`}>
+          <span className={`text-sm truncate ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+            👤 {username}
+          </span>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 text-sm rounded-lg"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* CHAT AREA */}
@@ -319,13 +333,21 @@ export default function ChatPage() {
 
         {/* HEADER */}
         <div className={`p-4 border-b ${isDark ? "border-slate-800" : "border-gray-200"} flex justify-between items-center`}>
-          <div>
-            <h1 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-              AI Chat Assistant
-            </h1>
-            <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
-              Welcome, {username} 👋
-            </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`p-2 rounded-lg ${isDark ? "hover:bg-slate-700 text-white" : "hover:bg-gray-200 text-gray-800"}`}
+            >
+              ☰
+            </button>
+            <div>
+              <h1 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                AI Chat Assistant
+              </h1>
+              <p className={`text-sm ${isDark ? "text-slate-400" : "text-gray-500"}`}>
+                Welcome, {username} 👋
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -333,12 +355,6 @@ export default function ChatPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium ${isDark ? "bg-slate-700 hover:bg-slate-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-800"}`}
             >
               {isDark ? "☀️ Light" : "🌙 Dark"}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
-            >
-              Logout
             </button>
           </div>
         </div>
