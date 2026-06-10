@@ -29,6 +29,7 @@ export default function ChatPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const transcriptRef = useRef("");
+  const existingInputRef = useRef("");
 
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
@@ -120,6 +121,7 @@ export default function ChatPage() {
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognition.continuous = false;
+      existingInputRef.current = input;
       transcriptRef.current = "";
       recognition.start();
       setIsListening(true);
@@ -135,19 +137,28 @@ export default function ChatPage() {
 
        transcriptRef.current = transcript;
 
-       setInput(transcript);
+       setInput(
+         existingInputRef.current +
+         (existingInputRef.current ? " " : "") +
+         transcript
+      );
      };
 
       recognition.onerror = () => setIsListening(false);
       recognition.onend = () => {
 
         if (transcriptRef.current) {
-          setInput(transcriptRef.current);
+
+          setInput(
+            existingInputRef.current +
+            (existingInputRef.current ? " " : "") +
+            transcriptRef.current
+          );
+
         }
 
         setIsListening(false);
       };
-
     } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
