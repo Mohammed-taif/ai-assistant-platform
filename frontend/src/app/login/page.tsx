@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/services/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,7 +12,15 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const data = await login(username, password);
+      const response = await fetch("https://ai-assistant-platform-ycqq.onrender.com/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
 
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
