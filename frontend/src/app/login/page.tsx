@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -12,8 +14,6 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
@@ -25,13 +25,10 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.access_token) {
-        // ✅ Save token and username to localStorage
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("username", username);
-
-        router.push("/chat"); // redirect to chat page
+        router.push("/chat");
       } else {
-        // Show error from backend (e.g. "Invalid username" or "Invalid password")
         setMessage(data.error || "Login failed");
       }
     } catch (error) {
