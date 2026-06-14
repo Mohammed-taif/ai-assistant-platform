@@ -19,6 +19,7 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ username, password }),
       });
+      // Check if the response is not ok (e.g., 400 or 500 status)
 
       const data = await response.json();
 
