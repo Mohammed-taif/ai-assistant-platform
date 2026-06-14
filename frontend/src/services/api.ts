@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ai-assistant-platform-ycqq.onrender.com";
 
 // ✅ Helper to handle responses and catch 401
 async function handleResponse(response: Response) {
